@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Finance Tracker by Khair</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        apple: { 50: '#f5f5f7', 800: '#1d1d1f', 900: '#000000' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(107, 114, 128, 0.8); }
+
+        /* Liquid Glass UI Elements */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+        }
+        .dark .glass-panel {
+            background: rgba(30, 41, 59, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Smooth Fade Transitions */
+        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .hidden-view { display: none !important; }
+        
+        input, select, textarea { transition: all 0.2s ease; }
+        input:focus, select:focus, textarea:focus { transform: translateY(-1px); }
+    </style>
+</head>
+<body class="bg-apple-50 dark:bg-apple-900 text-gray-900 dark:text-gray-100 overflow-hidden relative selection:bg-blue-500/30">
+
+    <!-- Ambient Background Blobs -->
+    <div class="absolute top-0 right-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl pointer-events-none -mt-20 -mr-20 z-0"></div>
+    <div class="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none -mb-20 -ml-20 z-0"></div>
+
+    <div id="custom-modal" class="fixed inset-0 z-[100] hidden items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="modal-backdrop"></div>
+        <div class="glass-panel w-full max-w-sm rounded-3xl p-6 relative z-10 transform scale-95 transition-transform duration-200" id="modal-content">
+            <div class="text-center">
+                <div id="modal-icon" class="mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 mb-4"></div>
+                <h3 id="modal-title" class="text-xl font-bold mb-2">Notice</h3>
+                <p id="modal-message" class="text-gray-600 dark:text-gray-400 text-sm mb-6"></p>
+                <button id="modal-close-btn" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold transition-colors">Understood</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-view" class="relative z-10 min-h-screen flex items-center justify-center p-4 hidden-view">
+        <div class="glass-panel w-full max-w-md rounded-[2rem] p-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+            
+            <div class="text-center mb-8 mt-2">
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-blue-500/30 mb-4 text-white text-3xl font-bold font-serif">K</div>
+                <h1 class="text-2xl font-bold">Finance Tracker</h1>
+                <p class="text-sm text-gray-500 mt-1">by Khair</p>
+            </div>
+
+            <!-- Sign In Form -->
+            <form id="signin-form" class="space-y-4">
+                <h2 class="text-lg font-semibold text-center mb-4">Sign In to Dashboard</h2>
+                <div>
+                    <label class="block text-sm font-medium mb-1 ml-1 text-gray-700 dark:text-gray-300">Username</label>
+                    <input type="text" id="login-username" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Enter your username">
+                </div>
+                <div class="relative">
+                    <label class="block text-sm font-medium mb-1 ml-1 text-gray-700 dark:text-gray-300">Password</label>
+                    <input type="password" id="login-password" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none pr-12" placeholder="Enter your password">
+                    <button type="button" onclick="togglePassword('login-password')" class="absolute right-4 top-[34px] text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </button>
+                </div>
+                <button type="submit" id="btn-login" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold shadow-lg shadow-blue-500/30 transition-all active:scale-95 mt-6">Sign In</button>
+                <p class="text-center text-sm text-gray-500 mt-4">Don't have an account? <button type="button" onclick="switchAuth('signup')" class="text-blue-500 font-semibold hover:underline">Sign Up</button></p>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="space-y-4 hidden-view">
+                <h2 class="text-lg font-semibold text-center mb-4">Create New Account</h2>
+                <div>
+                    <label class="block text-sm font-medium mb-1 ml-1 text-gray-700 dark:text-gray-300">New Username</label>
+                    <input type="text" id="reg-username" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Choose a unique username">
+                </div>
+                <div class="relative">
+                    <label class="block text-sm font-medium mb-1 ml-1 text-gray-700 dark:text-gray-300">Password</label>
+                    <input type="password" id="reg-password" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none pr-12" placeholder="Create a strong password">
+                    <button type="button" onclick="togglePassword('reg-password')" class="absolute right-4 top-[34px] text-gray-400 hover:text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    </button>
+                </div>
+                <button type="submit" id="btn-register" class="w-full py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-semibold shadow-lg shadow-purple-500/30 transition-all active:scale-95 mt-6">Register Account</button>
+                <p class="text-center text-sm text-gray-500 mt-4">Already have an account? <button type="button" onclick="switchAuth('signin')" class="text-blue-500 font-semibold hover:underline">Sign In</button></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="profile-setup-view" class="relative z-10 min-h-screen flex items-center justify-center p-4 hidden-view">
+        <div class="glass-panel w-full max-w-2xl rounded-[2rem] p-8">
+            <h2 class="text-2xl font-bold mb-2">Welcome! Let's set up your profile</h2>
+            <p class="text-gray-500 mb-6">Personalize your financial dashboard.</p>
+            <form id="profile-setup-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium mb-1 ml-1">Full Name</label><input type="text" id="prof-name" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                    <div><label class="block text-sm font-medium mb-1 ml-1">Age</label><input type="number" id="prof-age" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                    <div><label class="block text-sm font-medium mb-1 ml-1">Phone (Optional)</label><input type="text" id="prof-phone" class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                    <div><label class="block text-sm font-medium mb-1 ml-1">Occupation</label><input type="text" id="prof-job" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 ml-1">Financial Goals</label>
+                    <textarea id="prof-goals" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none h-24" placeholder="e.g. Save for a house, emergency fund..."></textarea>
+                </div>
+                <button type="submit" id="btn-save-profile" class="w-full py-3 bg-blue-600 text-white rounded-2xl font-semibold shadow-lg shadow-blue-500/30 transition-all mt-4">Complete Setup</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="main-app-view" class="relative z-10 h-screen flex hidden-view">
+        
+        <!-- Sidebar (Desktop) -->
+        <aside class="hidden md:flex flex-col w-64 glass-panel border-r-0 border-r border-gray-200 dark:border-gray-800 p-6 h-full z-20 shrink-0">
+            <div class="flex items-center space-x-3 mb-10">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg text-white font-bold text-xl">K</div>
+                <span class="font-bold text-lg tracking-tight">Finance Tracker</span>
+            </div>
+            <nav class="flex-1 space-y-2 overflow-y-auto pr-2 custom-scrollbar" id="desktop-nav">
+                <!-- Nav items generated via JS -->
+            </nav>
+            <div class="pt-6 mt-auto border-t border-gray-200 dark:border-gray-800">
+                <button onclick="handleSignOut()" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 transition-colors font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col h-full overflow-hidden relative">
+            
+            <!-- Mobile Topbar -->
+            <header class="md:hidden glass-panel border-b border-gray-200 dark:border-gray-800 p-4 flex justify-between items-center z-30">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold">K</div>
+                    <span class="font-bold">Finance Tracker</span>
+                </div>
+                <button onclick="toggleMobileMenu()" class="p-2 text-gray-600 dark:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                </button>
+            </header>
+
+            <!-- Mobile Menu Overlay -->
+            <div id="mobile-menu" class="fixed inset-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-3xl z-50 flex flex-col p-6 hidden-view transition-opacity duration-300">
+                <div class="flex justify-between items-center mb-8">
+                    <span class="font-bold text-xl">Menu</span>
+                    <button onclick="toggleMobileMenu()" class="p-2"><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+                </div>
+                <nav class="flex-1 space-y-3 overflow-y-auto custom-scrollbar" id="mobile-nav">
+                    <!-- Generated via JS -->
+                </nav>
+                <button onclick="handleSignOut()" class="mt-4 flex items-center justify-center space-x-2 p-4 text-red-500 font-bold bg-red-50 dark:bg-red-900/20 rounded-2xl">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+
+            <!-- Content Scroll Area -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-8 custom-scrollbar z-10" id="module-container">
+                
+                <div id="module-dashboard" class="module-view fade-in space-y-6">
+                    <header class="flex flex-col lg:flex-row lg:justify-between lg:items-end mb-8 gap-4">
+                        <div>
+                            <h1 class="text-3xl font-bold" id="dash-greeting">Welcome</h1>
+                            <p class="text-gray-500 mt-1 flex items-center space-x-2">
+                                <span id="dash-date"></span> <span class="w-1 h-1 bg-gray-400 rounded-full mx-1"></span> <span id="dash-time" class="font-medium"></span>
+                            </p>
+                        </div>
+                        <div class="px-6 py-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 font-medium italic shadow-sm">
+                            "<span id="dash-quote"></span>"
+                        </div>
+                    </header>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="glass-panel rounded-3xl p-6 bg-gradient-to-br from-blue-600 to-indigo-800 text-white border-none shadow-blue-500/30 shadow-xl">
+                            <div class="text-blue-200 text-sm font-medium mb-2">Total Balance</div>
+                            <div class="text-3xl font-bold truncate" id="dash-val-balance">RM 0.00</div>
+                        </div>
+                        <div class="glass-panel rounded-3xl p-6">
+                            <div class="text-gray-500 text-sm font-medium mb-2">Income This Month</div>
+                            <div class="text-2xl font-bold text-green-500 truncate" id="dash-val-income">RM 0.00</div>
+                        </div>
+                        <div class="glass-panel rounded-3xl p-6">
+                            <div class="text-gray-500 text-sm font-medium mb-2">Expenses This Month</div>
+                            <div class="text-2xl font-bold text-red-500 truncate" id="dash-val-expense">RM 0.00</div>
+                        </div>
+                        <div class="glass-panel rounded-3xl p-6">
+                            <div class="text-gray-500 text-sm font-medium mb-2">Monthly Commitments</div>
+                            <div class="text-2xl font-bold text-orange-500 truncate" id="dash-val-commitment">RM 0.00</div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-panel rounded-3xl p-6">
+                            <h3 class="text-lg font-semibold mb-4">Savings Progress</h3>
+                            <div class="text-3xl font-bold mb-1" id="dash-val-savings">RM 0.00</div>
+                            <div class="text-sm text-gray-500 mb-4">of <span id="dash-val-savings-target">RM 0.00</span> Target</div>
+                            <div class="w-full bg-gray-100 dark:bg-slate-800 rounded-full h-4 overflow-hidden shadow-inner">
+                                <div id="dash-savings-bar" class="bg-gradient-to-r from-green-400 to-emerald-500 h-full rounded-full transition-all duration-1000 w-0"></div>
+                            </div>
+                        </div>
+                        <div class="glass-panel rounded-3xl p-6 flex flex-col justify-center">
+                            <h3 class="text-lg font-semibold mb-4">Quick Actions</h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <button onclick="navigate('expenses')" class="py-4 border-2 border-gray-100 dark:border-gray-800 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center space-y-2 transition-colors">
+                                    <span class="text-2xl">+</span><span class="text-sm font-medium">Add Expense</span>
+                                </button>
+                                <button onclick="navigate('income')" class="py-4 border-2 border-gray-100 dark:border-gray-800 hover:border-green-500 rounded-2xl flex flex-col items-center justify-center space-y-2 transition-colors">
+                                    <span class="text-2xl">+</span><span class="text-sm font-medium">Record Income</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="module-salary" class="module-view hidden-view fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Salary Management</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-panel rounded-3xl p-6">
+                            <h3 class="text-lg font-semibold mb-4">Calculate & Record Salary</h3>
+                            <form id="form-salary" class="space-y-4">
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Gross Salary (RM)</label>
+                                <input type="number" step="0.01" id="sal-gross" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none" oninput="calculateSalary()"></div>
+                                
+                                <div class="p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-gray-700 space-y-3">
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Deductions (%)</h4>
+                                    <div class="grid grid-cols-3 gap-2">
+                                        <div><label class="text-xs ml-1">KWSP</label><input type="number" id="sal-kwsp" value="11" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-center outline-none" oninput="calculateSalary()"></div>
+                                        <div><label class="text-xs ml-1">SOCSO</label><input type="number" step="0.1" id="sal-socso" value="0.5" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-center outline-none" oninput="calculateSalary()"></div>
+                                        <div><label class="text-xs ml-1">EIS</label><input type="number" step="0.1" id="sal-eis" value="0.2" class="w-full px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm text-center outline-none" oninput="calculateSalary()"></div>
+                                    </div>
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mt-4">Custom Deduction</h4>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="text" id="sal-custom-name" placeholder="Name" class="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm outline-none">
+                                        <input type="number" id="sal-custom-amt" placeholder="RM Amount" value="0" class="px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-transparent text-sm outline-none" oninput="calculateSalary()">
+                                    </div>
+                                </div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Upload Payslip (Optional)</label>
+                                <input type="file" id="sal-file" class="w-full px-4 py-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"></div>
+                                
+                                <div class="flex justify-between items-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800">
+                                    <div><div class="text-xs text-blue-600 font-medium">Net Salary</div><div class="text-2xl font-bold text-blue-700 dark:text-blue-300" id="sal-net-display">RM 0.00</div></div>
+                                    <button type="submit" id="btn-save-sal" class="px-6 py-2 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="glass-panel rounded-3xl p-6 flex flex-col h-[600px]">
+                            <h3 class="text-lg font-semibold mb-4">Salary History</h3>
+                            <div class="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar" id="list-salary">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="module-income" class="module-view hidden-view fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Income Streams</h2>
+                    <div class="flex space-x-2 bg-gray-100 dark:bg-slate-800 p-1 rounded-2xl w-fit">
+                        <button onclick="setIncomeType('Fixed Salary')" id="tab-inc-fixed" class="inc-tab px-4 py-2 rounded-xl text-sm font-medium bg-white dark:bg-slate-700 shadow-sm transition-all">Fixed Salary</button>
+                        <button onclick="setIncomeType('Part-Time')" id="tab-inc-part" class="inc-tab px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">Part-Time</button>
+                        <button onclick="setIncomeType('Freelance')" id="tab-inc-free" class="inc-tab px-4 py-2 rounded-xl text-sm font-medium text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-all">Freelance</button>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel rounded-3xl p-6 lg:col-span-1 h-fit">
+                            <h3 class="text-lg font-semibold mb-4">Add <span id="lbl-inc-type">Fixed Salary</span></h3>
+                            <form id="form-income" class="space-y-4">
+                                <input type="hidden" id="inc-type" value="Fixed Salary">
+                                <div><label class="block text-sm font-medium mb-1 ml-1" id="lbl-inc-name">Company Name</label><input type="text" id="inc-name" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Amount (RM)</label><input type="number" step="0.01" id="inc-amt" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Payment Date</label><input type="datetime-local" id="inc-date" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Description (Optional)</label><input type="text" id="inc-desc" class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Proof/Receipt (Optional)</label><input type="file" id="inc-file" class="w-full px-4 py-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-green-50 file:text-green-700"></div>
+                                <button type="submit" id="btn-save-inc" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-semibold shadow-lg shadow-green-500/30">Record Income</button>
+                            </form>
+                        </div>
+                        <div class="glass-panel rounded-3xl p-6 lg:col-span-2">
+                            <h3 class="text-lg font-semibold mb-4">Income History</h3>
+                            <div class="space-y-3" id="list-income"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="module-commitments" class="module-view hidden-view fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Fixed Commitments</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel rounded-3xl p-6 lg:col-span-1 h-fit">
+                            <h3 class="text-lg font-semibold mb-4">Add Commitment</h3>
+                            <form id="form-commitment" class="space-y-4">
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Name</label><input type="text" id="com-name" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Category</label>
+                                    <select id="com-cat" class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none">
+                                        <option>Car Loan</option><option>House Loan</option><option>Personal Loan</option><option>Insurance</option><option>Bills</option><option>Subscription</option>
+                                    </select>
+                                </div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Monthly Payment (RM)</label><input type="number" step="0.01" id="com-monthly" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Total Loan Balance (RM)</label><input type="number" step="0.01" id="com-total" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Start Date</label><input type="date" id="com-start" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Next Due Date</label><input type="date" id="com-due" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <button type="submit" id="btn-save-com" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold">Add Commitment</button>
+                            </form>
+                        </div>
+                        <div class="lg:col-span-2 space-y-4" id="list-commitments"></div>
+                    </div>
+                </div>
+
+                <div id="module-debts" class="module-view hidden-view fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Emergency Debts</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel rounded-3xl p-6 lg:col-span-1 h-fit">
+                            <h3 class="text-lg font-semibold mb-4">Record New Debt</h3>
+                            <form id="form-debt" class="space-y-4">
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Person Name</label><input type="text" id="dbt-person" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Amount (RM)</label><input type="number" step="0.01" id="dbt-amt" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Reason</label><input type="text" id="dbt-reason" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Date Borrowed</label><input type="date" id="dbt-date" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Expected Repayment Date</label><input type="date" id="dbt-repay" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <button type="submit" id="btn-save-dbt" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-semibold shadow-lg shadow-red-500/30">Record Debt</button>
+                            </form>
+                        </div>
+                        <div class="lg:col-span-2 space-y-4" id="list-debts"></div>
+                    </div>
+                </div>
+
+                <div id="module-expenses" class="module-view hidden-view fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Daily Expenses</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel rounded-3xl p-6 lg:col-span-1 h-fit">
+                            <h3 class="text-lg font-semibold mb-4">Add Expense</h3>
+                            <form id="form-expense" class="space-y-4">
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Amount (RM)</label><input type="number" step="0.01" id="exp-amt" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Category</label>
+                                    <select id="exp-cat" class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none">
+                                        <option>Food</option><option>Transport</option><option>Shopping</option><option>Entertainment</option><option>Bills</option><option>Others</option>
+                                    </select>
+                                </div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Date & Time</label><input type="datetime-local" id="exp-date" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Description</label><input type="text" id="exp-desc" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Receipt (Optional)</label><input type="file" id="exp-file" class="w-full px-4 py-2 text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"></div>
+                                <button type="submit" id="btn-save-exp" class="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-2xl font-semibold shadow-lg shadow-red-500/30">Record Expense</button>
+                            </form>
+                        </div>
+                        <div class="glass-panel rounded-3xl p-6 lg:col-span-2">
+                            <h3 class="text-lg font-semibold mb-4">Recent Expenses</h3>
+                            <div class="space-y-3" id="list-expenses"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="module-savings" class="module-view hidden-view fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Savings & Tabung</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel rounded-3xl p-6 h-fit">
+                            <h3 class="text-lg font-semibold mb-4">Create Goal</h3>
+                            <form id="form-saving" class="space-y-4">
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Goal Name</label><input type="text" id="sav-name" required placeholder="e.g. Emergency Fund" class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Target (RM)</label><input type="number" step="0.01" id="sav-target" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Initial (RM)</label><input type="number" step="0.01" id="sav-init" value="0" class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <button type="submit" id="btn-save-sav" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl font-semibold shadow-lg shadow-emerald-500/30">Create Goal</button>
+                            </form>
+                        </div>
+                        <div class="col-span-1 lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6" id="list-savings"></div>
+                    </div>
+                </div>
+
+                <div id="module-accounts" class="module-view hidden-view fade-in space-y-6">
+                    <h2 class="text-2xl font-bold">Bank Accounts & Cash</h2>
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel rounded-3xl p-6 lg:col-span-1 h-fit">
+                            <h3 class="text-lg font-semibold mb-4">Add Account</h3>
+                            <form id="form-account" class="space-y-4">
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Account Name</label><input type="text" id="acc-name" required placeholder="e.g. Maybank, Cash" class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <div><label class="block text-sm font-medium mb-1 ml-1">Balance (RM)</label><input type="number" step="0.01" id="acc-bal" required class="w-full px-4 py-3 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-2xl outline-none"></div>
+                                <button type="submit" id="btn-save-acc" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold">Add Account</button>
+                            </form>
+                        </div>
+                        <div class="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4" id="list-accounts"></div>
+                    </div>
+                </div>
+
+                <!-- Footer spacing -->
+                <div class="h-24"></div>
+            </div>
+            
+            <div class="absolute bottom-4 left-0 right-0 text-center text-xs text-gray-400 pointer-events-none z-0">Developed by Khair</div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, query, onSnapshot, addDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // User's Provided Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD14ilGx_k1LGGxX1eM3NHyJG4vyCgkkk0",
+            authDomain: "finance-by-khair.firebaseapp.com",
+            projectId: "finance-by-khair",
+            storageBucket: "finance-by-khair.firebasestorage.app",
+            messagingSenderId: "359430684598",
+            appId: "1:359430684598:web:7de17ef8925791104a0b17"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+
+        // State
+        let currentUser = null;
+        let currentProfile = null;
+        let currentRoute = 'dashboard';
+        let unsubscribers = [];
+        let appData = { expenses: [], incomes: [], commitments: [], debts: [], savings: [], accounts: [], salaryHistory: [] };
+
+        // DOM Elements
+        const views = { auth: _('auth-view'), profile: _('profile-setup-view'), app: _('main-app-view') };
+        const modules = ['dashboard', 'salary', 'income', 'commitments', 'debts', 'expenses', 'savings', 'accounts'];
+        
+        // Utils
+        function _(id) { return document.getElementById(id); }
+        function hide(el) { el.classList.add('hidden-view'); }
+        function show(el) { el.classList.remove('hidden-view'); }
+        const formatCurrency = (amt) => new Intl.NumberFormat('en-MY', { style: 'currency', currency: 'MYR' }).format(amt || 0);
+        const formatDate = (dateObj) => {
+            if (!dateObj) return 'N/A';
+            const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
+            return new Intl.DateTimeFormat('en-MY', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'short', year: 'numeric' }).format(d);
+        };
+        const formatDateTime = (dateObj) => {
+            if (!dateObj) return 'N/A';
+            const d = dateObj.toDate ? dateObj.toDate() : new Date(dateObj);
+            return new Intl.DateTimeFormat('en-MY', { timeZone: 'Asia/Kuala_Lumpur', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d);
+        };
+        const genEmail = (usr) => `${usr.toLowerCase()}@financebykhair.local`;
+
+        // Modals (No alerts)
+        window.showModal = (title, msg, type = 'info') => {
+            _('modal-title').innerText = title;
+            _('modal-message').innerText = msg;
+            const icon = type === 'error' ? `<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`
+                        : type === 'success' ? `<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
+                        : `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            _('modal-icon').innerHTML = icon;
+            _('custom-modal').classList.remove('hidden');
+            _('custom-modal').classList.add('flex');
+            setTimeout(() => _('modal-content').classList.remove('scale-95'), 10);
+        };
+        _('modal-close-btn').onclick = () => {
+            _('modal-content').classList.add('scale-95');
+            setTimeout(() => { _('custom-modal').classList.add('hidden'); _('custom-modal').classList.remove('flex'); }, 200);
+        };
+        
+        window.togglePassword = (id) => {
+            const input = _(id);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                currentUser = user;
+                try {
+                    const profSnap = await getDoc(doc(db, 'users', user.uid, 'profile', 'main'));
+                    if (profSnap.exists() && !profSnap.data().needsSetup) {
+                        currentProfile = profSnap.data();
+                        hide(views.auth); hide(views.profile); show(views.app);
+                        startDataListeners();
+                        navigate('dashboard');
+                    } else {
+                        hide(views.auth); show(views.profile); hide(views.app);
+                    }
+                } catch(e) { console.error(e); }
+            } else {
+                currentUser = null; currentProfile = null;
+                stopDataListeners();
+                show(views.auth); hide(views.profile); hide(views.app);
+            }
+        });
+
+        window.switchAuth = (mode) => {
+            if(mode === 'signup') { hide(_('signin-form')); show(_('signup-form')); }
+            else { hide(_('signup-form')); show(_('signin-form')); }
+        };
+
+        // Navigation
+        const navItems = [
+            { id: 'dashboard', icon: `<path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>`, label: 'Dashboard' },
+            { id: 'salary', icon: `<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>`, label: 'Salary' },
+            { id: 'income', icon: `<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>`, label: 'Income Streams' },
+            { id: 'expenses', icon: `<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>`, label: 'Expenses' },
+            { id: 'commitments', icon: `<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>`, label: 'Commitments' },
+            { id: 'debts', icon: `<path d="M19 21v-2a4 4 0 00-4-4H9a4 4 0 00-4-4v2"/><circle cx="12" cy="7" r="4"/>`, label: 'Debts' },
+            { id: 'savings', icon: `<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>`, label: 'Savings' },
+            { id: 'accounts', icon: `<path d="M21 12V7H5a2 2 0 010-4h14v4"/><path d="M3 5v14a2 2 0 002 2h16v-5"/><path d="M18 12a2 2 0 000 4h4v-4Z"/>`, label: 'Accounts' }
+        ];
+
+        function renderNav() {
+            const createLink = (item) => `
+                <button onclick="navigate('${item.id}')" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl transition-all duration-200 ${currentRoute === item.id ? 'bg-blue-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white'}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${item.icon}</svg>
+                    <span class="font-medium">${item.label}</span>
+                </button>
+            `;
+            _('desktop-nav').innerHTML = navItems.map(createLink).join('');
+            _('mobile-nav').innerHTML = navItems.map(createLink).join('');
+        }
+
+        window.navigate = (route) => {
+            currentRoute = route;
+            modules.forEach(m => hide(_(`module-${m}`)));
+            show(_(`module-${route}`));
+            renderNav();
+            _('mobile-menu').classList.add('hidden-view');
+            renderCurrentView();
+        };
+
+        window.toggleMobileMenu = () => {
+            const m = _('mobile-menu');
+            m.classList.contains('hidden-view') ? show(m) : hide(m);
+        };
+
+        const DB_BASE = () => `users/${currentUser.uid}`;
+
+        function startDataListeners() {
+            const cols = Object.keys(appData);
+            cols.forEach(col => {
+                const q = query(collection(db, `${DB_BASE()}/${col}`));
+                const unsub = onSnapshot(q, snap => {
+                    let items = [];
+                    snap.forEach(d => items.push({ id: d.id, ...d.data() }));
+                    items.sort((a,b) => (b.date?.toDate?.() || b.createdAt?.toDate?.() || 0) - (a.date?.toDate?.() || a.createdAt?.toDate?.() || 0));
+                    appData[col] = items;
+                    renderCurrentView();
+                }, err => console.error(err));
+                unsubscribers.push(unsub);
+            });
+        }
+        function stopDataListeners() { unsubscribers.forEach(u => u()); unsubscribers = []; }
+
+        async function addRecord(colName, dataObj, fileInputId, fileFolder) {
+            if (!currentUser) return;
+            let fileUrl = null;
+            if (fileInputId && _(fileInputId).files[0]) {
+                const file = _(fileInputId).files[0];
+                const fileRef = ref(storage, `finance_tracker/${currentUser.uid}/${fileFolder}/${Date.now()}_${file.name}`);
+                await uploadBytes(fileRef, file);
+                fileUrl = await getDownloadURL(fileRef);
+            }
+            await addDoc(collection(db, `${DB_BASE()}/${colName}`), {
+                ...dataObj, fileUrl, createdAt: serverTimestamp(), userId: currentUser.uid
+            });
+        }
+
+        async function updateRecord(colName, id, updates) {
+            await updateDoc(doc(db, `${DB_BASE()}/${colName}`, id), updates);
+        }
+
+        _('signin-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-login'); btn.innerText = 'Signing In...'; btn.disabled = true;
+            try {
+                const email = genEmail(_('login-username').value);
+                await signInWithEmailAndPassword(auth, email, _('login-password').value);
+            } catch(err) {
+                if(err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') showModal('Error', 'Account not found. Please sign up first.', 'error');
+                else showModal('Login Failed', err.message, 'error');
+            } finally { btn.innerText = 'Sign In'; btn.disabled = false; }
+        };
+
+        _('signup-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-register'); btn.innerText = 'Registering...'; btn.disabled = true;
+            try {
+                const userCred = await createUserWithEmailAndPassword(auth, genEmail(_('reg-username').value), _('reg-password').value);
+                await setDoc(doc(db, 'users', userCred.user.uid, 'profile', 'main'), { 
+                    username: _('reg-username').value, needsSetup: true, createdAt: serverTimestamp() 
+                });
+            } catch(err) {
+                if(err.code === 'auth/email-already-in-use') showModal('Error', 'Username is already taken.', 'error');
+                else showModal('Error', err.message, 'error');
+            } finally { btn.innerText = 'Register Account'; btn.disabled = false; }
+        };
+
+        window.handleSignOut = () => signOut(auth);
+
+        _('profile-setup-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-save-profile'); btn.innerText = 'Saving...'; btn.disabled = true;
+            try {
+                await setDoc(doc(db, 'users', currentUser.uid, 'profile', 'main'), {
+                    fullName: _('prof-name').value, age: _('prof-age').value, phone: _('prof-phone').value,
+                    occupation: _('prof-job').value, financialGoals: _('prof-goals').value, needsSetup: false
+                }, { merge: true });
+                // Will trigger auth listener again
+            } catch(err) { showModal('Error', err.message, 'error'); }
+            finally { btn.innerText = 'Complete Setup'; btn.disabled = false; }
+        };
+
+        const MOTIVATIONS = ["Save More.", "Build Wealth.", "Spend Smart.", "Minimize Debt.", "Invest Wisely.", "Future Secured.", "Track Every Penny.", "Stay Disciplined.", "Financial Freedom.", "Patience Pays."];
+        const quote = MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)];
+        
+        setInterval(() => { if(currentRoute === 'dashboard') _('dash-time').innerText = new Date().toLocaleTimeString('en-MY', {timeZone: 'Asia/Kuala_Lumpur'}); }, 1000);
+
+        function renderCurrentView() {
+            if(currentRoute === 'dashboard') renderDashboard();
+            else if(currentRoute === 'salary') renderSalary();
+            else if(currentRoute === 'income') renderIncome();
+            else if(currentRoute === 'commitments') renderCommitments();
+            else if(currentRoute === 'debts') renderDebts();
+            else if(currentRoute === 'expenses') renderExpenses();
+            else if(currentRoute === 'savings') renderSavings();
+            else if(currentRoute === 'accounts') renderAccounts();
+        }
+
+        function renderDashboard() {
+            _('dash-greeting').innerText = `Welcome, ${currentProfile?.fullName || 'User'}`;
+            _('dash-date').innerText = formatDate(new Date());
+            _('dash-quote').innerText = quote;
+
+            const totalBal = appData.accounts.reduce((s, a) => s + a.balance, 0);
+            const currM = new Date().getMonth();
+            const incM = appData.incomes.filter(i => new Date(i.date?.toDate?.()||i.date).getMonth() === currM).reduce((s,i)=>s+i.amount, 0);
+            const expM = appData.expenses.filter(e => new Date(e.date?.toDate?.()||e.date).getMonth() === currM).reduce((s,e)=>s+e.amount, 0);
+            const comM = appData.commitments.reduce((s,c)=>s+c.monthlyAmount, 0);
+
+            _('dash-val-balance').innerText = formatCurrency(totalBal);
+            _('dash-val-income').innerText = formatCurrency(incM);
+            _('dash-val-expense').innerText = formatCurrency(expM);
+            _('dash-val-commitment').innerText = formatCurrency(comM);
+
+            const savCurr = appData.savings.reduce((s,v) => s + v.current, 0);
+            const savTar = appData.savings.reduce((s,v) => s + v.target, 0);
+            const prog = savTar > 0 ? (savCurr/savTar)*100 : 0;
+            _('dash-val-savings').innerText = formatCurrency(savCurr);
+            _('dash-val-savings-target').innerText = formatCurrency(savTar);
+            _('dash-savings-bar').style.width = `${Math.min(100, prog)}%`;
+        }
+
+        window.calculateSalary = () => {
+            const gross = parseFloat(_('sal-gross').value) || 0;
+            const kwsp = gross * (parseFloat(_('sal-kwsp').value||0)/100);
+            const socso = gross * (parseFloat(_('sal-socso').value||0)/100);
+            const eis = gross * (parseFloat(_('sal-eis').value||0)/100);
+            const cust = parseFloat(_('sal-custom-amt').value) || 0;
+            const net = gross - kwsp - socso - eis - cust;
+            _('sal-net-display').innerText = formatCurrency(net);
+            return { gross, kwsp, socso, eis, cust, net };
+        };
+        _('form-salary').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-save-sal'); btn.disabled = true; btn.innerText = '...';
+            try {
+                const calc = calculateSalary();
+                if(calc.gross <= 0) throw new Error("Gross salary required");
+                await addRecord('salaryHistory', {
+                    date: new Date(), gross: calc.gross, net: calc.net, 
+                    deductions: { kwsp: calc.kwsp, socso: calc.socso, eis: calc.eis, custom: calc.cust, customName: _('sal-custom-name').value||'Other' }
+                }, 'sal-file', 'payslips');
+                _('form-salary').reset(); calculateSalary();
+                showModal('Success', 'Salary recorded.', 'success');
+            } catch(e) { showModal('Error', e.message, 'error'); } finally { btn.disabled=false; btn.innerText='Save'; }
+        };
+        function renderSalary() {
+            _('list-salary').innerHTML = appData.salaryHistory.map(s => `
+                <div class="flex justify-between items-center p-3 hover:bg-gray-50 dark:hover:bg-slate-800/50 rounded-xl border border-transparent hover:border-gray-100 dark:hover:border-gray-700 transition-all">
+                    <div><div class="font-medium">${formatDate(s.date)}</div><div class="text-xs text-gray-500">Gross: ${formatCurrency(s.gross)}</div></div>
+                    <div class="text-right"><div class="font-bold text-blue-600">${formatCurrency(s.net)}</div>
+                    ${s.fileUrl ? `<a href="${s.fileUrl}" target="_blank" class="text-xs text-blue-500 hover:underline flex items-center justify-end"><svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>Payslip</a>` : `<div class="text-xs text-red-400">Ded: ${formatCurrency(s.gross-s.net)}</div>`}</div>
+                </div>`).join('') || '<p class="text-sm text-gray-500">No records yet.</p>';
+        }
+
+        window.setIncomeType = (t) => {
+            _('inc-type').value = t; _('lbl-inc-type').innerText = t;
+            _('lbl-inc-name').innerText = t === 'Freelance' ? 'Job/Client Name' : t === 'Part-Time' ? 'Student/Company Name' : 'Company Name';
+            ['Fixed Salary', 'Part-Time', 'Freelance'].forEach(id => {
+                const el = _(`tab-inc-${id.substring(0,4).toLowerCase()}`);
+                if(t===id) { el.classList.add('bg-white','dark:bg-slate-700','shadow-sm','text-gray-900','dark:text-white'); el.classList.remove('text-gray-500'); }
+                else { el.classList.remove('bg-white','dark:bg-slate-700','shadow-sm','text-gray-900','dark:text-white'); el.classList.add('text-gray-500'); }
+            });
+        };
+        _('form-income').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-save-inc'); btn.disabled=true; btn.innerText='...';
+            try {
+                await addRecord('incomes', { type: _('inc-type').value, name: _('inc-name').value, amount: parseFloat(_('inc-amt').value), date: new Date(_('inc-date').value), description: _('inc-desc').value }, 'inc-file', 'receipts');
+                _('form-income').reset(); showModal('Success', 'Income recorded.', 'success');
+            } catch(e) { showModal('Error', e.message, 'error'); } finally { btn.disabled=false; btn.innerText='Record Income'; }
+        };
+        function renderIncome() {
+            _('list-income').innerHTML = appData.incomes.map(i => `
+                <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center text-green-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+                        </div>
+                        <div><div class="font-semibold">${i.name}</div><div class="text-xs text-gray-500">${i.type} • ${formatDateTime(i.date)}</div>
+                        ${i.fileUrl ? `<a href="${i.fileUrl}" target="_blank" class="text-xs text-blue-500 hover:underline">View Proof</a>` : ''}</div>
+                    </div>
+                    <div class="font-bold text-green-500 text-lg">+${formatCurrency(i.amount)}</div>
+                </div>`).join('') || '<p class="text-sm text-gray-500">No records.</p>';
+        }
+
+        _('form-commitment').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-save-com'); btn.disabled=true; btn.innerText='...';
+            try {
+                const total = parseFloat(_('com-total').value);
+                await addRecord('commitments', { name: _('com-name').value, category: _('com-cat').value, monthlyAmount: parseFloat(_('com-monthly').value), totalBalance: total, remainingBalance: total, startDate: new Date(_('com-start').value), dueDate: new Date(_('com-due').value), status: 'Pending' });
+                _('form-commitment').reset(); showModal('Success', 'Commitment added.', 'success');
+            } catch(e) { showModal('Error', e.message, 'error'); } finally { btn.disabled=false; btn.innerText='Add Commitment'; }
+        };
+        window.markPaidCom = async (id, remain, monthly) => {
+            const newBal = Math.max(0, remain - monthly);
+            await updateRecord('commitments', id, { remainingBalance: newBal, status: 'Paid for this month', lastPaidAt: new Date() });
+        };
+        function renderCommitments() {
+            _('list-commitments').innerHTML = appData.commitments.map(c => {
+                const prog = ((c.totalBalance - c.remainingBalance) / c.totalBalance) * 100;
+                const mLeft = Math.ceil(c.remainingBalance / c.monthlyAmount) || 0;
+                const dueT = c.dueDate?.toDate?.()||new Date(c.dueDate);
+                const isDue = (dueT.getTime() - new Date().getTime()) < (3*24*60*60*1000) && c.status !== 'Paid for this month';
+                return `
+                <div class="glass-panel rounded-3xl p-6 relative overflow-hidden">
+                    ${isDue ? `<div class="absolute top-0 right-0 bg-red-500 text-white text-xs px-3 py-1 rounded-bl-xl flex items-center space-x-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg> <span>Due Soon</span></div>` : ''}
+                    <div class="flex justify-between items-start mb-4">
+                        <div><h4 class="text-xl font-bold">${c.name}</h4><p class="text-sm text-gray-500">${c.category} • Due: ${formatDate(c.dueDate)}</p></div>
+                        <div class="text-right"><div class="text-2xl font-bold">${formatCurrency(c.monthlyAmount)}<span class="text-sm font-normal text-gray-400">/mo</span></div></div>
+                    </div>
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm"><span class="text-gray-500">Progress</span><span class="font-medium">${formatCurrency(c.totalBalance - c.remainingBalance)} / ${formatCurrency(c.totalBalance)}</span></div>
+                        <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2"><div class="bg-blue-500 h-full rounded-full" style="width:${prog}%"></div></div>
+                        <div class="flex justify-between text-xs text-gray-400"><span>${mLeft} months remaining</span><span>${Math.round(prog)}% Paid</span></div>
+                    </div>
+                    <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                        <div class="text-sm font-medium">Status: <span class="${c.status==='Pending'?'text-orange-500':'text-green-500'}">${c.status}</span></div>
+                        <button onclick="markPaidCom('${c.id}', ${c.remainingBalance}, ${c.monthlyAmount})" class="px-4 py-2 ${c.status==='Pending'?'bg-blue-600 text-white':'bg-gray-200 dark:bg-slate-800 text-gray-500'} rounded-xl text-sm font-semibold transition-all" ${c.remainingBalance<=0 || c.status==='Paid for this month' ? 'disabled':''}>${c.status==='Pending'?'Mark as Paid':'Paid'}</button>
+                    </div>
+                </div>`;
+            }).join('') || '<p class="text-gray-500">No fixed commitments.</p>';
+        }
+
+        _('form-debt').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-save-dbt'); btn.disabled=true; btn.innerText='...';
+            try {
+                const amt = parseFloat(_('dbt-amt').value);
+                await addRecord('debts', { person: _('dbt-person').value, amount: amt, remaining: amt, reason: _('dbt-reason').value, date: new Date(_('dbt-date').value), repayDate: new Date(_('dbt-repay').value) });
+                _('form-debt').reset(); showModal('Success', 'Debt recorded.', 'success');
+            } catch(e) { showModal('Error', e.message, 'error'); } finally { btn.disabled=false; btn.innerText='Record Debt'; }
+        };
+        window.payDebt = async (id, remain) => {
+            const v = parseFloat(_(`dbt-pay-${id}`).value);
+            if(isNaN(v) || v<=0 || v>remain) return showModal('Error', 'Invalid payment amount', 'error');
+            await updateRecord('debts', id, { remaining: remain - v, lastPaymentDate: new Date() });
+        };
+        function renderDebts() {
+            _('list-debts').innerHTML = appData.debts.map(d => `
+                <div class="glass-panel rounded-3xl p-6 ${d.remaining<=0 ? 'opacity-60':''}">
+                    <div class="flex justify-between items-start mb-4">
+                        <div><h4 class="text-xl font-bold">Owe: ${d.person}</h4><p class="text-sm text-gray-500">${d.reason} • ${formatDate(d.date)}</p></div>
+                        <div class="text-right"><div class="text-xl font-bold text-red-500">${formatCurrency(d.remaining)}</div><div class="text-xs text-gray-500">of ${formatCurrency(d.amount)}</div></div>
+                    </div>
+                    ${d.remaining > 0 ? `<div class="flex space-x-2 mt-4"><input type="number" step="0.01" id="dbt-pay-${d.id}" placeholder="Pay amount" class="flex-1 px-4 py-2 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-xl outline-none"><button onclick="payDebt('${d.id}', ${d.remaining})" class="px-4 py-2 border-2 border-gray-200 dark:border-gray-700 rounded-xl font-medium hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors">Pay</button></div>` : `<div class="text-green-500 font-medium mt-2 flex items-center space-x-1"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>Settled</span></div>`}
+                </div>`).join('') || '<p class="text-gray-500">No debts recorded.</p>';
+        }
+
+        _('form-expense').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-save-exp'); btn.disabled=true; btn.innerText='...';
+            try {
+                await addRecord('expenses', { amount: parseFloat(_('exp-amt').value), category: _('exp-cat').value, description: _('exp-desc').value, date: new Date(_('exp-date').value) }, 'exp-file', 'receipts');
+                _('form-expense').reset(); showModal('Success', 'Expense recorded.', 'success');
+            } catch(e) { showModal('Error', e.message, 'error'); } finally { btn.disabled=false; btn.innerText='Record Expense'; }
+        };
+        function renderExpenses() {
+            _('list-expenses').innerHTML = appData.expenses.map(ex => `
+                <div class="flex justify-between items-center p-4 bg-gray-50 dark:bg-slate-800/50 rounded-2xl border border-gray-100 dark:border-gray-700">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center text-red-500">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/></svg>
+                        </div>
+                        <div><div class="font-semibold">${ex.description}</div><div class="text-xs text-gray-500">${ex.category} • ${formatDateTime(ex.date)}</div>
+                        ${ex.fileUrl ? `<a href="${ex.fileUrl}" target="_blank" class="text-xs text-blue-500 hover:underline">View Receipt</a>` : ''}</div>
+                    </div>
+                    <div class="font-bold text-red-500 text-lg">-${formatCurrency(ex.amount)}</div>
+                </div>`).join('') || '<p class="text-sm text-gray-500">No expenses.</p>';
+        }
+
+        _('form-saving').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-save-sav'); btn.disabled=true; btn.innerText='...';
+            try {
+                await addRecord('savings', { name: _('sav-name').value, target: parseFloat(_('sav-target').value), current: parseFloat(_('sav-init').value)||0 });
+                _('form-saving').reset(); showModal('Success', 'Goal created.', 'success');
+            } catch(e) { showModal('Error', e.message, 'error'); } finally { btn.disabled=false; btn.innerText='Create Goal'; }
+        };
+        window.saveMore = async (id, curr) => {
+            const v = parseFloat(_(`sav-add-${id}`).value);
+            if(isNaN(v) || v<=0) return;
+            await updateRecord('savings', id, { current: curr + v });
+        };
+        function renderSavings() {
+            _('list-savings').innerHTML = appData.savings.map(s => {
+                const prog = Math.min(100, (s.current / s.target)*100);
+                return `
+                <div class="glass-panel rounded-3xl p-6 flex flex-col justify-between">
+                    <div>
+                        <div class="flex justify-between items-start mb-2"><h4 class="text-xl font-bold">${s.name}</h4><div class="text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-2 py-1 rounded-lg text-sm font-bold">${Math.round(prog)}%</div></div>
+                        <div class="text-2xl font-bold mt-2">${formatCurrency(s.current)}</div><div class="text-sm text-gray-500 mb-4">Goal: ${formatCurrency(s.target)}</div>
+                        <div class="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 mb-6"><div class="bg-gradient-to-r from-emerald-400 to-teal-500 h-full rounded-full" style="width:${prog}%"></div></div>
+                    </div>
+                    <div class="flex space-x-2"><input type="number" step="0.01" id="sav-add-${s.id}" placeholder="+ Add amount" class="flex-1 px-4 py-2 bg-white/50 dark:bg-slate-800/50 border border-gray-200 dark:border-gray-700 rounded-xl outline-none"><button onclick="saveMore('${s.id}', ${s.current})" class="px-4 py-2 bg-gray-100 dark:bg-slate-800 rounded-xl font-semibold hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors">Save</button></div>
+                </div>`;
+            }).join('') || '<p class="col-span-2 text-gray-500">No savings goals.</p>';
+        }
+
+        _('form-account').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = _('btn-save-acc'); btn.disabled=true; btn.innerText='...';
+            try {
+                await addRecord('accounts', { name: _('acc-name').value, balance: parseFloat(_('acc-bal').value) });
+                _('form-account').reset(); showModal('Success', 'Account added.', 'success');
+            } catch(e) { showModal('Error', e.message, 'error'); } finally { btn.disabled=false; btn.innerText='Add Account'; }
+        };
+        window.updateAccBal = async (id) => {
+            const v = parseFloat(_(`acc-upd-${id}`).value);
+            if(isNaN(v)) return;
+            await updateRecord('accounts', id, { balance: v });
+        };
+        function renderAccounts() {
+            _('list-accounts').innerHTML = appData.accounts.map(a => `
+                <div class="rounded-3xl p-6 bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-xl relative overflow-hidden flex flex-col justify-between h-48">
+                    <div class="absolute top-4 right-4 opacity-20"><svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+                    <div><h4 class="text-lg font-medium text-gray-300">${a.name}</h4><div class="text-3xl font-bold mt-1">${formatCurrency(a.balance)}</div></div>
+                    <div class="flex space-x-2 mt-4 relative z-10"><input type="number" step="0.01" id="acc-upd-${a.id}" placeholder="New balance" value="${a.balance}" class="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-xl outline-none text-sm placeholder-gray-400"><button onclick="updateAccBal('${a.id}')" class="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-xl text-sm font-semibold transition-colors">Update</button></div>
+                </div>`).join('') || '<p class="col-span-2 text-gray-500">No accounts added.</p>';
+        }
+    </script>
+</body>
+</html>
